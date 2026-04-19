@@ -1,4 +1,7 @@
 import sqlite3
+import logging
+
+logger = logging.getLogger(__name__)
 
 conn = sqlite3.connect('earthquakes.db')
 curr = conn.cursor()
@@ -29,9 +32,10 @@ def init_db():
 
     curr.execute('''
         CREATE TABLE IF NOT EXISTS daily_earthquakes (
-            date TEXT PRIMARY KEY,
+            date TEXT,
             mag_bucket TEXT,
-            num_earthquakes INTEGER
+            num_earthquakes INTEGER,
+            PRIMARY KEY (date, mag_bucket)
         )
     ''')
 
@@ -58,13 +62,29 @@ def new_earthquakes(earthquakes):
     return new_earthquakes
 
 def insert_earthquakes(earthquakes):
-    curr.executemany('''
-        INSERT INTO earthquakes (id, mag, mag_bucket, place, longitude, latitude, depth, date, time, updated, tz, url, status) VALUES (:id, :mag, :mag_bucket, :place, :longitude, :latitude, :depth, :date, :time, :updated, :tz, :url, :status)
-    ''', earthquakes)
-    conn.commit()
+    try:
+        curr.executemany(
+            '''
+            INSERT OR REPLACE INTO earthquakes (id, mag, mag_bucket, place, longitude, latitude, depth, date, time, updated, tz, url, status) VALUES (:id, :mag, :mag_bucket, :place, :longitude, :latitude, :depth, :date, :time, :updated, :tz, :url, :status)
+            ''', 
+            earthquakes
+        )
+        conn.commit()
+        logger.info(f"Inserted {len(earthquakes)} earthquakes.")
+    except Exception as e:
+        logger.error(f"Error inserting earthquakes: {e}")
+        raise
 
 def insert_daily_earthquakes(daily_earthquakes):
-    curr.executemany('''
-        INSERT OR REPLACE INTO daily_earthquakes (date, mag_bucket, num_earthquakes) VALUES (:date, :mag_bucket, :num_earthquakes)
-    ''', daily_earthquakes)
-    conn.commit()
+    try:
+        curr.executemany(
+            '''
+            INSERT OR REPLACE INTO daily_earthquakes (date, mag_bucket, num_earthquakes) VALUES (:date, :mag_bucket, :num_earthquakes)
+            ''', 
+            daily_earthquakes
+        )
+        conn.commit()
+        logger.info(f"Inserted {len(daily_earthquakes)} daily earthquakes.")
+    except Exception as e:
+        logger.error(f"Error inserting daily earthquakes: {e}")
+        raise
