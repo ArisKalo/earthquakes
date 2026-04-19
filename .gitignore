@@ -3,4 +3,4 @@ __pycache__
 earthquakes.db
 tables/
 .DS_Store
-app.log
+app.log.DS_Store
